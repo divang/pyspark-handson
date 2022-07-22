@@ -1,0 +1,17 @@
+Prerequisite:
+- Java
+- python
+- pip
+- pip install pyspark
+- Download Spark: https://www.apache.org/dyn/closer.lua/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz
+
+
+Test Setup [https://spark.apache.org/docs/latest/quick-start.html]
+./bin/pyspark
+>>> textFile = spark.read.text("README.md")
+>>> textFile.count() 
+>>> textFile.first()
+
+Spark Web Portal:
+Get the Spark web url from console of `./bin/pyspark`
+http://192.168.1.5:4040
