@@ -1,13 +1,14 @@
 Prerequisite:
 - Java
-- python
-- pip
-- pip install pyspark
-- Download Spark: https://www.apache.org/dyn/closer.lua/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz
-
+	- https://www.oracle.com/java/technologies/downloads/archive/ [pick 1.8 or higher]
+	- set JAVA_HOME
+- Spark	
+	- https://www.apache.org/dyn/closer.lua/spark/spark-3.3.0/spark-3.3.0-bin-hadoop3.tgz
 
 Test Setup [https://spark.apache.org/docs/latest/quick-start.html]
+
 ./bin/pyspark
+
 >>> textFile = spark.read.text("README.md")
 >>> textFile.count() 
 >>> textFile.first()
