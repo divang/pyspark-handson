@@ -1,0 +1,103 @@
+SparkContext:
+	Main entry point for Spark functionality. 
+	A SparkContext represents the connection to a Spark cluster, and can be used to create RDDs, accumulators and broadcast variables on that cluster. 
+	is an entry point to the PySpark functionality that is used to communicate with the cluster and to create an RDD, accumulator, and broadcast variables. 
+	The Spark driver program creates and uses SparkContext to connect to the cluster manager to submit PySpark jobs, and know what resource manager (YARN, Mesos, or Standalone) to communicate to. It is the heart of the PySpark application.
+	You can stop the SparkContext by calling the stop() method. As explained above you can have only one SparkContext per JVM. If you wanted to create another, you need to shutdown it first by using stop() method and create a new SparkContext.
+
+
+SparkSession:
+	is a combined class for all different contexts
+	SparkSession also includes all the APIs available in different contexts:
+		SparkContext,
+		SQLContext,
+		StreamingContext,
+		HiveContext.
+	Creating a SparkSession creates a SparkContext internally and exposes the sparkContext variable to use.	
+
+SparkConf:
+	Configuration for a Spark application. Used to set various Spark parameters as key-value pairs.
+
+Example Code:
+	import pyspark
+	from pyspark.sql import SparkSession
+	spark = SparkSession.builder.master("local").appName('myFirstApp').getOrCreate()
+	# Set Config
+	spark.conf.set("spark.executor.memory", "5g")
+	# Get a Spark Config
+	partions = spark.conf.get("spark.sql.shuffle.partitions")
+	print(spark.sparkContext)
+	print("Spark App Name : "+ spark.sparkContext.appName)
+
+	The appName parameter is a name for your application to show on the cluster UI. 
+	master is a Spark, Mesos or YARN cluster URL, or a special “local” string to run in local mode. 
+
+
+Launching Applications with spark-submit: 
+	[https://spark.apache.org/docs/latest/submitting-applications.html#bundling-your-applications-dependencies]
+
+	./bin/spark-submit \
+	  --verbose \
+	  --deploy-mode <deploy-mode> \
+	  --conf <key>=<value> \
+	  --driver-memory 8g \
+	  --executor-memory 16g \
+	  --executor-cores 2  \
+      --py-files file1.py,file2.py,file3.zip
+      <python spark app>.py
+	  [application-arguments]
+
+	For Python, you can use the --py-files argument of spark-submit to add .py, .zip or .egg files to be distributed with your application. If you depend on multiple Python files we recommend packaging them into a .zip or .egg. For third-party Python dependencies, see Python 
+
+	--master: The master URL for the cluster (e.g. spark://23.195.26.187:7077)
+	--deploy-mode: Whether to deploy your driver on the worker nodes (cluster) or locally as an external client (client) (default: client) †
+	--conf: Arbitrary Spark configuration property in key=value format. For values that contain spaces wrap “key=value” in quotes (as shown). Multiple configurations should be passed as separate arguments. (e.g. --conf <key>=<value> --conf <key2>=<value2>)
+
+Resilient Distributed Datasets (RDDs):
+	Spark revolves around the concept of a resilient distributed dataset (RDD), which is a fault-tolerant collection of elements that can be operated on in parallel. 
+	There are two ways to create RDDs: 
+		- parallelizing an existing collection in your driver program, or 
+		- referencing a dataset in an external storage system, such as a shared filesystem, HDFS, HBase, or any data source offering a Hadoop InputFormat.
+	>>>
+	data = [1, 2, 3, 4, 5]
+	distData = sc.parallelize(data)	
+
+DataFrame creation:
+	data = [('James','','Smith','1991-04-01','M',3000),
+	  ('Michael','Rose','','2000-05-19','M',4000),
+	  ('Robert','','Williams','1978-09-05','M',4000),
+	  ('Maria','Anne','Jones','1967-12-01','F',4000),
+	  ('Jen','Mary','Brown','1980-02-17','F',-1)
+	]
+
+	columns = ["firstname","middlename","lastname","dob","gender","salary"]
+	df = spark.createDataFrame(data=data, schema = columns)
+
+DataFrame schema:
+	df.printSchema()
+
+DataFrame sample data print:
+	df.show()
+
+DataFrame operations
+	Like RDD, DataFrame also has operations like Transformations and Actions.
+
+DataFrame from external data sources
+	DataFrame has a rich set of API which supports reading and writing several file formats
+		csv
+		text
+		Avro
+		Parquet
+		tsv
+		xml and many more
+
+Running Spark local cluster:
+	1- Run spark local cluster
+	./sbin/start-master.sh
+
+	2- Pick Master URL
+	INFO Master: Starting Spark master at spark://prakhars-MacBook-Air.local:7077
+
+	3- Run Worker
+	./sbin/start-worker.sh spark://prakhars-MacBook-Air.local:7077
+	
