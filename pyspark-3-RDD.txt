@@ -1,0 +1,136 @@
+RDD (Resilient Distributed Dataset):
+	It is a fundamental building block of PySpark which is fault-tolerant, immutable distributed collections of objects. 
+	Immutable meaning once you create an RDD you cannot change it. 
+	Each record in RDD is divided into logical partitions, which can be computed on different nodes of the cluster. 
+	RDD is computed on several processes scattered across multiple physical servers also called nodes in a cluster while a Python collection lives and process in just one process.
+	RDDs provide data abstraction of partitioning and distribution of the data designed to run computations in parallel on several nodes, while doing transformations on RDD we don’t have to worry about the parallelism as PySpark by default provides.
+
+PySpark RDD Benefits:
+	In-Memory Processing
+		PySpark loads the data from disk and process in memory and keeps the data in memory, this is the main difference between PySpark and Mapreduce (I/O intensive). 
+		In between the transformations, we can also cache/persists the RDD in memory to reuse the previous computations.		
+	Immutability
+		PySpark RDD’s are immutable in nature meaning, once RDDs are created you cannot modify. When we apply transformations on RDD, PySpark creates a new RDD and maintains the RDD Lineage.	
+	Fault Tolerance
+		PySpark operates on fault-tolerant data stores on HDFS, S3 e.t.c hence any RDD operation fails, it automatically reloads the data from other partitions. 
+		Also, When PySpark applications running on a cluster, PySpark task failures are automatically recovered for a certain number of times (as per the configuration) and finish the application seamlessly.	
+	Lazy Evolution
+		PySpark does not evaluate the RDD transformations as they appear/encountered by Driver instead it keeps the all transformations as it encounters(DAG) and evaluates the all transformation when it sees the first RDD action.
+	Partitioning
+		When you create RDD from a data, It by default partitions the elements in a RDD. By default it partitions to the number of cores available.	
+
+RDD creation:
+	Create RDD using sparkContext.parallelize()
+		By using parallelize() function of SparkContext (sparkContext.parallelize() ) you can create an RDD.
+		>>>
+		#Create RDD from parallelize    
+		data = [1,2,3,4,5,6,7,8,9,10,11,12]
+		rdd=spark.sparkContext.parallelize(data)
+
+	Create RDD using sparkContext.textFile()
+		>>>
+		#Create RDD from external Data source
+		rdd2 = spark.sparkContext.textFile("/path/textFile.txt")
+
+	Create empty RDD using sparkContext.emptyRDD
+		>>>
+		# Creates empty RDD with no partition    
+		rdd = spark.sparkContext.emptyRDD 				
+
+RDD Parallelize:
+	Initiate RDD, it automatically splits the data into partitions based on resource availability. 
+	Set parallelize manually – We can also set a number of partitions manually, all, we need is, to pass a number of partitions as the second parameter to these functions for example  
+	sparkContext.parallelize([1,2,3,4,56,7,8,9,12,3], 10)
+
+Repartition and Coalesce- two ways to repartition:
+	first using repartition() method which shuffles data from all nodes also called full shuffle and 
+	second coalesce() method which shuffle data from minimum nodes, for examples if you have data in 4 partitions and doing coalesce(2) moves data from just 2 nodes.  
+
+PySpark RDD Operations:
+	RDD transformations – Transformations are lazy operations, instead of updating an RDD, these operations return another RDD.
+	RDD actions – operations that trigger computation and return RDD values.
+
+RDD Transformations:
+	
+	rdd = spark.sparkContext.textFile("test.txt")
+	rdd2 = rdd.flatMap(lambda x: x.split(" "))
+	rdd3 = rdd2.map(lambda x: (x,1))
+	rdd4 = rdd3.reduceByKey(lambda a,b: a+b)
+	rdd5 = rdd4.map(lambda x: (x[1],x[0])).sortByKey()
+	print(rdd5.collect())
+
+	rdd4 = rdd3.filter(lambda x : 'an' in x[1])
+
+
+	# Action - first
+	firstRec = rdd6.first()
+	print("First Record : "+str(firstRec[0]) + ","+ firstRec[1])
+
+
+	# Action - max
+	datMax = rdd6.max()
+	print("Max Record : "+str(datMax[0]) + ","+ datMax[1])
+
+
+	# Action - reduce
+	totalWordCount = rdd6.reduce(lambda a,b: (a[0]+b[0],a[1]))
+	print("dataReduce Record : "+str(totalWordCount[0]))
+
+
+	# Action - take
+	data3 = rdd6.take(3)
+	for f in data3:
+	    print("data3 Key:"+ str(f[0]) +", Value:"+f[1])
+
+
+	# Action - collect
+	data = rdd6.collect()
+	for f in data:
+	    print("Key:"+ str(f[0]) +", Value:"+f[1])
+
+
+	rdd6.saveAsTextFile("/tmp/wordCount")
+
+
+Shuffle Operations:
+	Shuffling is a mechanism PySpark uses to redistribute the data across different executors and even across machines. 
+	PySpark shuffling triggers when we perform certain transformation operations like gropByKey(), reduceByKey(), join() on RDDS
+	PySpark Shuffle is an expensive operation since it involves the following
+		Disk I/O
+		Involves data serialization and deserialization
+		Network I/O
+	PySpark RDD triggers shuffle and repartition for several operations like 
+		repartition()
+		coalesce(),  
+		groupByKey(),  
+		reduceByKey(), 
+		join()
+
+PySpark RDD Persistence:
+	PySpark RDD cache() method by default saves RDD computation to storage level `MEMORY_ONLY` meaning it will store the data in the JVM heap as unserialized objects.
+	>>>
+	cachedRdd = rdd.cache()
+
+PySpark Shared Variables:
+	PySpark provides two types of shared variables
+		Broadcast variables (read-only shared variable)
+			read-only shared variables that are cached and available on all nodes in a cluster in-order to access or use by the tasks
+			>>>
+			broadcastVar = sc.broadcast([0, 1, 2, 3])
+			broadcastVar.value
+
+		Accumulator variables (updatable shared variables)
+			“added” through an associative and commutative operation and are used to perform counters (Similar to Map-reduce counters) or sum operations.
+			When you create a named accumulator, you can see them on PySpark web UI under the “Accumulator” tab
+			>>>
+			accum = sc.longAccumulator("SumAccumulator")
+			sc.parallelize([1, 2, 3]).foreach(lambda x: accum.add(x))
+
+
+
+
+
+
+
+
+		
