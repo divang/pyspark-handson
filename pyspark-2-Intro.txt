@@ -53,44 +53,6 @@ Launching Applications with spark-submit:
 	--deploy-mode: Whether to deploy your driver on the worker nodes (cluster) or locally as an external client (client) (default: client) †
 	--conf: Arbitrary Spark configuration property in key=value format. For values that contain spaces wrap “key=value” in quotes (as shown). Multiple configurations should be passed as separate arguments. (e.g. --conf <key>=<value> --conf <key2>=<value2>)
 
-Resilient Distributed Datasets (RDDs):
-	Spark revolves around the concept of a resilient distributed dataset (RDD), which is a fault-tolerant collection of elements that can be operated on in parallel. 
-	There are two ways to create RDDs: 
-		- parallelizing an existing collection in your driver program, or 
-		- referencing a dataset in an external storage system, such as a shared filesystem, HDFS, HBase, or any data source offering a Hadoop InputFormat.
-	>>>
-	data = [1, 2, 3, 4, 5]
-	distData = sc.parallelize(data)	
-
-DataFrame creation:
-	data = [('James','','Smith','1991-04-01','M',3000),
-	  ('Michael','Rose','','2000-05-19','M',4000),
-	  ('Robert','','Williams','1978-09-05','M',4000),
-	  ('Maria','Anne','Jones','1967-12-01','F',4000),
-	  ('Jen','Mary','Brown','1980-02-17','F',-1)
-	]
-
-	columns = ["firstname","middlename","lastname","dob","gender","salary"]
-	df = spark.createDataFrame(data=data, schema = columns)
-
-DataFrame schema:
-	df.printSchema()
-
-DataFrame sample data print:
-	df.show()
-
-DataFrame operations
-	Like RDD, DataFrame also has operations like Transformations and Actions.
-
-DataFrame from external data sources
-	DataFrame has a rich set of API which supports reading and writing several file formats
-		csv
-		text
-		Avro
-		Parquet
-		tsv
-		xml and many more
-
 Running Spark local cluster:
 	1- Run spark local cluster
 	./sbin/start-master.sh
