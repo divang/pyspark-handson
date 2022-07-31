@@ -109,3 +109,18 @@ Aggregation:
 >>> from pyspark.sql.functions import sum, count, avg, expr
 >>> flightData2015.select(count("count"), sum("count"), avg("count"), expr("mean(count)")).show()
 
+Join:
+>>>
+data_country_code_map_cols=["DEST_COUNTRY_NAME","country_code"]
+data_country_code_map=[("United States",1),("India",91),("United Kingdom",4),("Canada",2)]
+df_country_code_map=spark.createDataFrame(data_country_code_map).toDF(*data_country_code_map_cols)
+
+Left Join:
+df_2015.join(df_country_code_map, df_2015.DEST_COUNTRY_NAME == df_country_code_map.DEST_COUNTRY_NAME, "left").show(5)
+
+Inner Join:
+df_2015.join(df_country_code_map, df_2015.DEST_COUNTRY_NAME == df_country_code_map.DEST_COUNTRY_NAME, "inner").show(5)
+
+Union:
+Both dataframes should be have same no. of columns.
+<dataframe 1>.union(<dataframe 2>)
