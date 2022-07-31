@@ -1,0 +1,50 @@
+Create DataFrame from RDD:
+	toDF()
+	createDataFrame()
+
+	>>>
+	columns = ["language","users_count"]
+	data = [("Java", "20000"), ("Python", "100000"), ("Scala", "3000")]
+	
+	Using toDF() function:
+		>>>
+		dfFromRDD1 = rdd.toDF()
+		dfFromRDD1.printSchema()
+
+		>>>
+		columns = ["language","users_count"]
+		dfFromRDD1 = rdd.toDF(columns)
+		dfFromRDD1.printSchema()
+
+	Using createDataFrame() from SparkSession:
+		>>>
+		dfFromRDD2 = spark.createDataFrame(rdd).toDF(*columns)
+
+	Create DataFrame from List Collection
+		>>>
+		dfFromData2 = spark.createDataFrame(data).toDF(*columns)
+
+Create DataFrame with schema:
+	>>>
+		from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+		data2 = [("James","","Smith","36636","M",3000),
+		    ("Michael","Rose","","40288","M",4000),
+		    ("Robert","","Williams","42114","M",4000),
+		    ("Maria","Anne","Jones","39192","F",4000),
+		    ("Jen","Mary","Brown","","F",-1)
+		  ]
+
+		schema = StructType([ \
+		    StructField("firstname",StringType(),True), \
+		    StructField("middlename",StringType(),True), \
+		    StructField("lastname",StringType(),True), \
+		    StructField("id", StringType(), True), \
+		    StructField("gender", StringType(), True), \
+		    StructField("salary", IntegerType(), True) \
+		  ])
+		 
+		df = spark.createDataFrame(data=data2,schema=schema)
+		df.printSchema()
+		df.show(truncate=False)
+
+	

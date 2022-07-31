@@ -1,0 +1,111 @@
+Dataset: https://github.com/ageron/handson-ml/blob/master/datasets/housing/housing.csv
+
+SQL practice:
+https://towardsdatascience.com/data-transformation-in-pyspark-6a88a6193d92
+
+Github: https://github.com/databricks/Spark-The-Definitive-Guide
+Dataset: https://github.com/databricks/Spark-The-Definitive-Guide/blob/master/data/flight-data/csv/2015-summary.csv
+
+Load data
+>>>
+flightData2015=spark.read.option("inferSchema","true").option("header","true").csv("/Users/divang/Downloads/2015-summary.csv")
+
+Explain:
+>>>
+flightData2015.sort("count").explain()
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [count#19 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(count#19 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [id=#27]
+      +- FileScan csv [DEST_COUNTRY_NAME#17,ORIGIN_COUNTRY_NAME#18,count#19] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[file:/Users/divang/Downloads/2015-summary.csv], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<DEST_COUNTRY_NAME:string,ORIGIN_COUNTRY_NAME:string,count:int>
+
+>>>
+>>> spark.conf.set("spark.sql.shuffle.partitions","5")
+>>> flightData2015.sort("count").explain()
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [count#19 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(count#19 ASC NULLS FIRST, 5), ENSURE_REQUIREMENTS, [id=#37]
+      +- FileScan csv [DEST_COUNTRY_NAME#17,ORIGIN_COUNTRY_NAME#18,count#19] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[file:/Users/divang/Downloads/2015-summary.csv], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<DEST_COUNTRY_NAME:string,ORIGIN_COUNTRY_NAME:string,count:int>
+
+Max:
+>>> from pyspark.sql.functions import max
+>>> flightData2015.select(max('count')).take(1)
+[Row(max(count)=370002)]
+
+SQL table creation:
+>>>
+flightData2015.createOrReplaceTempView("flight_data_2015")
+
+>>>
+spark.sql("select DEST_COUNTRY_NAME, sum(count) as destination_total from flight_data_2015 group by DEST_COUNTRY_NAME order by sum(count) desc limit 5").show()
+
+Filter / Where clause:
+>>> from pyspark.sql.functions import col, column
+>>> flightData2015.filter(col("count") >  1).show(3)
++-----------------+-------------------+-----+
+|DEST_COUNTRY_NAME|ORIGIN_COUNTRY_NAME|count|
++-----------------+-------------------+-----+
+|    United States|            Romania|   15|
+|    United States|            Ireland|  344|
+|            Egypt|      United States|   15|
++-----------------+-------------------+-----+
+
+>>> flightData2015.where(col("count") > 300).show(3)
++-----------------+-------------------+-----+
+|DEST_COUNTRY_NAME|ORIGIN_COUNTRY_NAME|count|
++-----------------+-------------------+-----+
+|    United States|            Ireland|  344|
+|       Costa Rica|      United States|  588|
+|    United States|       Sint Maarten|  325|
++-----------------+-------------------+-----+
+only showing top 3 rows
+
+Distinct:
+>>> flightData2015.where(col("count") > 300).distinct().show()
+
+Count:
+>>> flightData2015.where(col("count") > 300).distinct().count()
+60
+
+
+Group By/Sum/Rename Column/Sort/Limit/Show:
+>>> from pyspark.sql.functions import desc
+>>> flightData2015.groupBy("DEST_COUNTRY_NAME").sum("count").withColumnRenamed("sum(count)", "destination_total").sort(desc("destination_total")).limit(5).show()
++-----------------+-----------------+
+|DEST_COUNTRY_NAME|destination_total|
++-----------------+-----------------+
+|    United States|           411352|
+|           Canada|             8399|
+|           Mexico|             7140|
+|   United Kingdom|             2025|
+|            Japan|             1548|
++-----------------+-----------------+
+
+Repartition:
+>>> df_repart = flightData2015.repartition(4)
+>>> df_repart.rdd.getNumPartitions()
+
+>>> df_repart.groupBy('DEST_COUNTRY_NAME').sum().explain()
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- HashAggregate(keys=[DEST_COUNTRY_NAME#17], functions=[sum(count#19)])
+   +- Exchange hashpartitioning(DEST_COUNTRY_NAME#17, 5), ENSURE_REQUIREMENTS, [id=#559]
+      +- HashAggregate(keys=[DEST_COUNTRY_NAME#17], functions=[partial_sum(count#19)])
+         +- Exchange RoundRobinPartitioning(4), REPARTITION_BY_NUM, [id=#555]
+            +- FileScan csv [DEST_COUNTRY_NAME#17,count#19] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[file:/Users/divang/Downloads/2015-summary.csv], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<DEST_COUNTRY_NAME:string,count:int>
+
+Drop:
+>>> flightData2015.na.drop()
+
+User defined function:
+>>> def power3(value):
+...     return value **3
+...           
+>>> spark.udf.register("power3py", power3, IntegerType())
+>>> spark.sql("select count, power3py(count) from flight_data_2015 limit 5").show()
+
+Aggregation:
+>>> from pyspark.sql.functions import sum, count, avg, expr
+>>> flightData2015.select(count("count"), sum("count"), avg("count"), expr("mean(count)")).show()
+
