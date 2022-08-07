@@ -1,0 +1,52 @@
+Ref: MIT 18.06 Linear Algebra, Spring 2005
+https://www.youtube.com/watch?v=ZK3O402wf1c&list=PL49CF3715CB9EF31D&index=1&ab_channel=MITOpenCourseWare
+
+Ref: Stanford CS229: Machine Learning Course [Autumn 2018]
+https://www.youtube.com/watch?v=jGwO_UgTS7I&list=PLoROMvodv4rMiGQp3WXShtMGgzqpfVfbU&index=2&ab_channel=StanfordOnline
+
+Ref: https://spark.apache.org/docs/latest/ml-statistics.html
+Ref: https://github.com/databricks/Spark-The-Definitive-Guide
+
+Correlation:
+Calculating the correlation between two series of data is a common operation in Statistics. In spark.ml we provide the flexibility to calculate pairwise correlations among many series. The supported correlation methods are currently Pearson’s and Spearman’s correlation.
+
+Find full example code at "examples/src/main/python/ml/correlation_example.py" in the Spark repo.
+>>>
+import numpy as np
+from pyspark import SparkContext
+from pyspark.mllib.stat import Statistics
+seriesX = sc.parallelize([1.0, 2.0, 3.0, 3.0, 5.0])  # a series
+seriesY = sc.parallelize([11.0, 22.0, 33.0, 33.0, 555.0])
+print("Correlation is: " + str(Statistics.corr(seriesX, seriesY, method="pearson")))
+data = sc.parallelize(
+    [np.array([1.0, 10.0, 100.0]), np.array([2.0, 20.0, 200.0]), np.array([5.0, 33.0, 366.0])]
+)
+print(Statistics.corr(data, method="pearson"))
+
+Hypothesis testing:
+Hypothesis testing is a powerful tool in statistics to determine whether a result is statistically significant, whether this result occurred by chance or not. spark.ml currently supports Pearson’s Chi-squared ( χ2) tests for independence.
+
+ChiSquareTest:
+ChiSquareTest conducts Pearson’s independence test for every feature against the label. For each feature, the (feature, label) pairs are converted into a contingency matrix for which the Chi-squared statistic is computed. All label and feature values must be categorical.
+
+ML prerequisite:
+- Collect data 
+- Cleaning, transformation 
+- ML Algorithm
+- Training dataset, validation dataset
+- Evalute with ML
+- Mode ready -> real dataset
+
+MLib
+- Transformation
+- Estimation
+- Evaluation
+- Pipleine
+
+
+
+
+
+
+
+
