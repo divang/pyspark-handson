@@ -1,0 +1,268 @@
+Ref: https://github.com/susanli2016/PySpark-and-MLlib/blob/master/Machine%20Learning%20PySpark%20and%20MLlib.ipynb
+
+Install jupyter
+>
+python3 -m pip install -U jupyter matplotlib numpy pandas scipy scikit-learn
+
+Run Notebook
+>jupyter notebook
+
+
+>>>
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('ml-bank').getOrCreate()
+df = spark.read.csv('/Users/divang/Downloads/bank-full.csv', header = True, inferSchema = True)
+df.printSchema()
+
+root
+ |-- age: integer (nullable = true)
+ |-- job: string (nullable = true)
+ |-- marital: string (nullable = true)
+ |-- education: string (nullable = true)
+ |-- default: string (nullable = true)
+ |-- balance: integer (nullable = true)
+ |-- housing: string (nullable = true)
+ |-- loan: string (nullable = true)
+ |-- contact: string (nullable = true)
+ |-- day: integer (nullable = true)
+ |-- month: string (nullable = true)
+ |-- duration: integer (nullable = true)
+ |-- campaign: integer (nullable = true)
+ |-- pdays: integer (nullable = true)
+ |-- previous: integer (nullable = true)
+ |-- poutcome: string (nullable = true)
+ |-- Target: string (nullable = true)
+
+>>>
+import pandas as pd
+pd.DataFrame(df.take(5), columns=df.columns).transpose()
+
+	0	1	2	3	4
+age	59	56	41	55	54
+job	admin.	admin.	technician	services	admin.
+marital	married	married	married	married	married
+education	secondary	secondary	secondary	secondary	tertiary
+default	no	no	no	no	no
+balance	2343	45	1270	2476	184
+housing	yes	no	yes	yes	no
+loan	no	no	no	no	no
+contact	unknown	unknown	unknown	unknown	unknown
+day	5	5	5	5	5
+month	may	may	may	may	may
+duration	1042	1467	1389	579	673
+campaign	1	1	1	1	2
+pdays	-1	-1	-1	-1	-1
+previous	0	0	0	0	0
+poutcome	unknown	unknown	unknown	unknown	unknown
+Target	yes	yes	yes	yes	yes
+
+>>>
+df.groupby('Target').count().toPandas()
+
+deposit	count
+0	no	5873
+1	yes	5289
+
+>>>
+numeric_features = [t[0] for t in df.dtypes if t[1] == 'int']
+df.select(numeric_features).describe().toPandas().transpose()
+
+0	1	2	3	4
+summary	count	mean	stddev	min	max
+age	11162	41.231947679627304	11.913369192215518	18	95
+balance	11162	1528.5385235620856	3225.413325946149	-6847	81204
+day	11162	15.658036194230425	8.420739541006462	1	31
+duration	11162	371.99381831213043	347.12838571630687	2	3881
+campaign	11162	2.508421429851281	2.7220771816614824	1	63
+pdays	11162	51.33040673714388	108.75828197197717	-1	854
+previous	11162	0.8325568894463358	2.292007218670508	0	58
+
+
+>>>
+from pandas.plotting import scatter_matrix
+numeric_data = df.select(numeric_features).toPandas()
+axs = scatter_matrix(numeric_data, figsize=(8, 8));
+
+# Rotate axis labels and remove axis ticks
+n = len(numeric_data.columns)
+for i in range(n):
+    v = axs[i, 0]
+    v.yaxis.label.set_rotation(0)
+    v.yaxis.label.set_ha('right')
+    v.set_yticks(())
+    h = axs[n-1, i]
+    h.xaxis.label.set_rotation(90)
+    h.set_xticks(())
+
+>>>
+df = df.select('age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'duration', 'campaign', 'pdays', 'previous', 'poutcome', 'Target')
+cols = df.columns
+df.printSchema()
+
+
+>>>
+from pyspark.ml.feature import OneHotEncoder, StringIndexer, VectorAssembler
+
+categoricalColumns = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'poutcome']
+stages = []
+
+for categoricalCol in categoricalColumns:
+    stringIndexer = StringIndexer(inputCol = categoricalCol, outputCol = categoricalCol + 'Index')
+    encoder = OneHotEncoder(inputCols=[stringIndexer.getOutputCol()], outputCols=[categoricalCol + "classVec"])
+    stages += [stringIndexer, encoder]
+
+label_stringIdx = StringIndexer(inputCol = 'Target', outputCol = 'label')
+stages += [label_stringIdx]
+
+numericCols = ['age', 'balance', 'duration', 'campaign', 'pdays', 'previous']
+assemblerInputs = [c + "classVec" for c in categoricalColumns] + numericCols
+assembler = VectorAssembler(inputCols=assemblerInputs, outputCol="features")
+stages += [assembler]
+
+from pyspark.ml import Pipeline
+pipeline = Pipeline(stages = stages)
+pipelineModel = pipeline.fit(df)
+df = pipelineModel.transform(df)
+selectedCols = ['label', 'features'] + cols
+df = df.select(selectedCols)
+df.printSchema()
+
+pd.DataFrame(df.take(5), columns=df.columns).transpose()
+
+
+Traing and test dataset
+>>> 
+train, test = df.randomSplit([0.7, 0.3], seed = 2018)
+print("Training Dataset Count: " + str(train.count()))
+print("Test Dataset Count: " + str(test.count()))
+
+
+
+Logistic Regression Model
+>>>
+from pyspark.ml.classification import LogisticRegression
+
+lr = LogisticRegression(featuresCol = 'features', labelCol = 'label', maxIter=10)
+lrModel = lr.fit(train)
+
+import matplotlib.pyplot as plt
+import numpy as np
+beta = np.sort(lrModel.coefficients)
+plt.plot(beta)
+plt.ylabel('Beta Coefficients')
+plt.show()
+
+Obtain the receiver-operating characteristic and areaUnderROC
+
+>>>
+trainingSummary = lrModel.summary
+roc = trainingSummary.roc.toPandas()
+plt.plot(roc['FPR'],roc['TPR'])
+plt.ylabel('False Positive Rate')
+plt.xlabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.show()
+print('Training set areaUnderROC: ' + str(trainingSummary.areaUnderROC))
+
+>
+Training set areaUnderROC: 0.8849092421146739
+
+Precision and Recall
+>>>
+pr = trainingSummary.pr.toPandas()
+plt.plot(pr['recall'],pr['precision'])
+plt.ylabel('Precision')
+plt.xlabel('Recall')
+plt.show()
+
+>
+Set the model threshold to maximize F-Measure
+
+>>>
+f = trainingSummary.fMeasureByThreshold.toPandas()
+plt.plot(f['threshold'],f['F-Measure'])
+plt.ylabel('F-Measure')
+plt.xlabel('Threshold')
+plt.show()
+
+================================
+Make predictions on the test set
+================================
+
+predictions = lrModel.transform(test)
+predictions.select('age', 'job', 'label', 'rawPrediction', 'prediction', 'probability').show(10)
+
+
+Evaluate our Logistic Regression model
+from pyspark.ml.evaluation import BinaryClassificationEvaluator
+
+evaluator = BinaryClassificationEvaluator()
+print('Test Area Under ROC', evaluator.evaluate(predictions))
+
+>
+Test Area Under ROC 0.8953123002168385
+
+evaluator.getMetricName()
+>
+'areaUnderROC'
+
+========================
+Decision Tree Classifier
+========================
+Decision trees are widely used since they are easy to interpret, handle categorical features, extend to the multiclass classification setting, do not require feature scaling, and are able to capture non-linearities and feature interactions.
+
+>>>
+from pyspark.ml.classification import DecisionTreeClassifier
+
+dt = DecisionTreeClassifier(featuresCol = 'features', labelCol = 'label', maxDepth = 3)
+dtModel = dt.fit(train)
+predictions = dtModel.transform(test)
+predictions.select('age', 'job', 'label', 'rawPrediction', 'prediction', 'probability').show(10)
+
+evaluator = BinaryClassificationEvaluator()
+print("Test Area Under ROC: " + str(evaluator.evaluate(predictions, {evaluator.metricName: "areaUnderROC"})))
+
+>Test Area Under ROC: 0.7807240050065357
+evaluator.getMetricName()
+>areaUnderROC
+
+========================
+Random Forest Classifier
+========================
+>>>
+from pyspark.ml.classification import RandomForestClassifier
+
+rf = RandomForestClassifier(featuresCol = 'features', labelCol = 'label')
+rfModel = rf.fit(train)
+predictions = rfModel.transform(test)
+predictions.select('age', 'job', 'label', 'rawPrediction', 'prediction', 'probability').show(10)
+
+================================================
+Gradient-boosted Tree Classifier
+================================================
+>>>
+from pyspark.ml.classification import GBTClassifier
+
+gbt = GBTClassifier(maxIter=10)
+gbtModel = gbt.fit(train)
+predictions = gbtModel.transform(test)
+predictions.select('age', 'job', 'label', 'rawPrediction', 'prediction', 'probability').show(10)
+evaluator = BinaryClassificationEvaluator()
+print("Test Area Under ROC: " + str(evaluator.evaluate(predictions, {evaluator.metricName: "areaUnderROC"})))
+>Test Area Under ROC: 0.8940728473145346
+evaluator.getMetricName()
+>'areaUnderROC'
+
+
+from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
+paramGrid = (ParamGridBuilder()
+             .addGrid(gbt.maxDepth, [2, 4, 6])
+             .addGrid(gbt.maxBins, [20, 60])
+             .addGrid(gbt.maxIter, [10, 20])
+             .build())
+cv = CrossValidator(estimator=gbt, estimatorParamMaps=paramGrid, evaluator=evaluator, numFolds=5)
+# Run cross validations.  This can take about 6 minutes since it is training over 20 trees!
+cvModel = cv.fit(train)
+predictions = cvModel.transform(test)
+evaluator.evaluate(predictions)
+>0.8981050997838095
