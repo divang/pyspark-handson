@@ -90,7 +90,7 @@ PySpark + Hive Integration:
 ===========================
 
 https://spark.apache.org/docs/latest/sql-data-sources-hive-tables.html
-	Copy give-site.xml file to spark's conf directory
+	Copy hive-site.xml file to spark's conf directory
 
 >>>
 from os.path import abspath
