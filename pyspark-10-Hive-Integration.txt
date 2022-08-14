@@ -1,0 +1,113 @@
+Hadoop:
+======
+Download:
+https://dlcdn.apache.org/hadoop/common/hadoop-3.3.4/hadoop-3.3.4.tar.gz
+
+Installation:
+https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation
+
+
+==> etc/hadoop/core-site.xml
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+
+==> etc/hadoop/hdfs-site.xml
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+</configuration>
+
+Setup passphraseless ssh:
+Mac: Enable 22 port 
+	sudo systemsetup -getremotelogin
+	sudo systemsetup -setremotelogin on
+	System Preference -> Sharing -> enable Remote Login that's it. 100% working solution
+
+$ ssh localhost
+$ ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+$ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+$ chmod 0600 ~/.ssh/authorized_keys
+
+Hadoop
+$ bin/hdfs namenode -format
+$ sbin/start-dfs.sh
+
+Hive:
+=====
+
+Download:
+https://dlcdn.apache.org/hive/hive-3.1.3/apache-hive-3.1.3-bin.tar.gz
+
+Installation:
+https://cwiki.apache.org/confluence/display/Hive//GettingStarted
+
+export HIVE_HOME=/Users/divang/Downloads/apache-hive-3.1.3-bin
+export PATH=$HIVE_HOME/bin:$PATH
+
+Hive directories:
+$ $HADOOP_HOME/bin/hadoop fs -mkdir       /tmp
+$ $HADOOP_HOME/bin/hadoop fs -mkdir       /user/hive
+$ $HADOOP_HOME/bin/hadoop fs -mkdir       /user/hive/warehouse
+$ $HADOOP_HOME/bin/hadoop fs -chmod g+w   /tmp
+$ $HADOOP_HOME/bin/hadoop fs -chmod g+w   /user/hive/warehouse
+
+==>Conf hive-site.xml
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+<property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:derby:/Users/divang/Downloads/apache-hive-3.1.3-bin/metastore_db;databaseName=metastore_db;create=true</value>
+</property>
+<property>
+    <name>hive.execution.engine</name>
+    <value>spark</value>
+    <description>
+      Expects one of [mr, tez, spark].
+      Chooses execution engine. Options are: mr (Map reduce, default), tez, spark. While MR
+      remains the default engine for historical reasons, it is itself a historical engine
+      and is deprecated in Hive 2 line. It may be removed without further warning.
+    </description>
+  </property>
+</configuration>
+
+
+$HIVE_HOME/bin/schematool -dbType derby -initSchema
+$HIVE_HOME/bin/hive
+
+>>>
+CREATE TABLE pokes (foo INT, bar STRING);
+SHOW TABLES;
+LOAD DATA LOCAL INPATH './examples/files/kv1.txt' OVERWRITE INTO TABLE pokes;
+
+PySpark + Hive Integration:
+===========================
+
+https://spark.apache.org/docs/latest/sql-data-sources-hive-tables.html
+	Copy give-site.xml file to spark's conf directory
+
+>>>
+from os.path import abspath
+from pyspark.sql import SparkSession
+from pyspark.sql import Row
+# warehouse_location points to the default location for managed databases and tables
+warehouse_location = abspath('spark-warehouse')
+
+spark = SparkSession \
+    .builder \
+    .appName("Python Spark SQL Hive integration example") \
+    .config("spark.sql.warehouse.dir", warehouse_location) \
+    .enableHiveSupport() \
+    .getOrCreate()
+
+# spark is an existing SparkSession
+spark.sql("CREATE TABLE IF NOT EXISTS src (key INT, value STRING) USING hive")
+spark.sql("LOAD DATA LOCAL INPATH 'examples/src/main/resources/kv1.txt' INTO TABLE src")
+# Queries are expressed in HiveQL
+spark.sql("SELECT * FROM src").show()
