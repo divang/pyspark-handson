@@ -1,0 +1,35 @@
+Flume:
+======
+Download: https://dlcdn.apache.org/flume/1.10.0/apache-flume-1.10.0-bin.tar.gz
+Setup guide: https://flume.apache.org/FlumeUserGuide.html
+Theory: https://www.tutorialspoint.com/apache_flume/apache_flume_quick_guide.htm
+
+Apache Flume is a distributed, reliable, and available system for efficiently collecting, aggregating and moving large amounts of log data from many different sources to a centralized data store.
+
+The use of Apache Flume is not only restricted to log data aggregation. 
+Since data sources are customizable, Flume can be used to transport massive quantities of event data including but not limited to network traffic data, social-media-generated data, email messages and pretty much any data source possible.
+
+Apache Flume is a top level project at the Apache Software Foundation.
+
+Telnet install:
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install telnet
+
+
+bin/flume-ng agent -n agentKafkaToSpark -c conf -f conf/flume-conf.properties
+
+bin/pyspark --packages org.apache.spark:spark-streaming-flume_2.11:2.2.0
+
+<!-- https://mvnrepository.com/artifact/org.apache.spark/spark-avro -->
+<dependency>
+    <groupId>org.apache.spark</groupId>
+    <artifactId>spark-avro_2.13</artifactId>
+    <version>3.3.0</version>
+</dependency>
+
+
+bin/pyspark --packages org.apache.spark:spark-avro_2.13:3.3.0
+
+>>>
+from pyspark.sql.flume import FlumeUtils
+flumeStream = FlumeUtils.createStream(streamingContext, [chosen machine's hostname], [chosen port])
